@@ -1,0 +1,24 @@
+{
+  "name": "backend-space-sync",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts"
+  },
+  "keywords": [],
+  "author": "Julio Cesar Orso",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "fastify": "^4.26.2",
+    "superchats": "3.3.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@rocketseat/eslint-config": "^2.2.2",
+    "@types/node": "^20.11.26",
+    "tsup": "^8.0.2",
+    "tsx": "^4.7.1"
+  }
+}
