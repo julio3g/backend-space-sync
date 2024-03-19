@@ -65,7 +65,7 @@ export class CreateMessageController {
       delayTime,
       status,
       copywriting,
-      images,
+      files,
     })
 
     // return reply.status(201).send()

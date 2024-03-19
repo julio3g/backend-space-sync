@@ -10,12 +10,24 @@ datasource db {
 model Message {
   id          String   @id @default(uuid())
   name        String
-  dateTime    String
+  dateTime    DateTime
   delayTime   Int
   status      String?
   copywriting String
-  images      String[]
+  files       File[]
   createdAt   DateTime @default(now())
 
   @@map("messages")
+}
+
+model File {
+  id          String   @id @default(cuid())
+  name        String
+  key         String
+  contentType String
+  message     Message  @relation(fields: [messageId], references: [id])
+  messageId   String
+  createdAt   DateTime @default(now())
+
+  @@map("files")
 }
