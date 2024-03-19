@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify'
-import { messagesRoutes } from '../controllers/messages'
+import { createUploadMessage } from './create-upload-message'
 
 export async function appRoutes(app: FastifyInstance) {
-  app.register(messagesRoutes)
+  // app.register(messagesRoutes)
+  app.register(createUploadMessage)
 }

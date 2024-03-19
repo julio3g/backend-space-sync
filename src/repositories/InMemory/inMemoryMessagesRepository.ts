@@ -35,7 +35,7 @@ export class InMemoryMessagesRepository implements MessagesRepository {
       delayTime: data.delayTime ?? 0,
       status: data.status ?? '',
       copywriting: data.copywriting,
-      images: data.images as string[],
+      files: data.files,
       createdAt: new Date(),
     }
     this.items.push(message)

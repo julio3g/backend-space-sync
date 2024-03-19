@@ -7,7 +7,7 @@ interface CreateMessageUseCaseRequest {
   delayTime: number
   status: string
   copywriting: string
-  images: string[]
+  files: any
 }
 
 interface CreateMessageUseCaseResponse {
@@ -23,7 +23,7 @@ export class CreateMessageUseCase {
     delayTime,
     status,
     copywriting,
-    images,
+    files,
   }: CreateMessageUseCaseRequest): Promise<CreateMessageUseCaseResponse> {
     const message = await this.messagesRepository.create({
       name,
@@ -31,7 +31,7 @@ export class CreateMessageUseCase {
       delayTime,
       status,
       copywriting,
-      images,
+      files,
     })
     return { message }
   }
