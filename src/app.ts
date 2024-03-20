@@ -13,8 +13,6 @@ import { prisma } from './lib/prisma'
 export const app = fastify()
 app.register(multipart)
 
-// app.register(appRoutes)
-
 app.post('/messages', async (request: FastifyRequest, reply: FastifyReply) => {
   const createMessageBodySchema = z.object({
     name: z.string(),
