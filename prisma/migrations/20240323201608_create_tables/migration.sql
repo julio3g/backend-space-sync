@@ -1,14 +1,15 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE "messages" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "dateTime" TIMESTAMP(3) NOT NULL,
+    "delayTime" INTEGER NOT NULL,
+    "status" TEXT,
+    "copywriting" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  - You are about to drop the `File` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- DropForeignKey
-ALTER TABLE "File" DROP CONSTRAINT "File_messageId_fkey";
-
--- DropTable
-DROP TABLE "File";
+    CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "files" (

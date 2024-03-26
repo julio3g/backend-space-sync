@@ -21,12 +21,12 @@ model Message {
 }
 
 model File {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   name        String
   key         String
   contentType String
-  message     Message  @relation(fields: [messageId], references: [id])
-  messageId   String
+  messageId   String?
+  message     Message? @relation(fields: [messageId], references: [id])
   createdAt   DateTime @default(now())
 
   @@map("files")

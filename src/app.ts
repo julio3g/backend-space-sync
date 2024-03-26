@@ -1,17 +1,18 @@
-import { PutObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { env } from '@/env'
 import cors from '@fastify/cors'
-import multipart from '@fastify/multipart'
+import { fastifyMultipart } from '@fastify/multipart'
 import { randomUUID } from 'crypto'
 import fastify, { FastifyReply, FastifyRequest } from 'fastify'
-import { env } from 'process'
+import { createReadStream } from 'fs'
+import { writeFile } from 'fs/promises'
+import path from 'node:path'
 import { ZodError, z } from 'zod'
 import { AppError } from './appError'
-import { r2 } from './lib/cloudflare'
 import { prisma } from './lib/prisma'
+import { formatFileName } from './utils/normalizeFile'
 
 export const app = fastify()
-app.register(multipart)
+app.register(fastifyMultipart)
 
 app.post('/messages', async (request: FastifyRequest, reply: FastifyReply) => {
   const createMessageBodySchema = z.object({
@@ -24,55 +25,8 @@ app.post('/messages', async (request: FastifyRequest, reply: FastifyReply) => {
   const { name, dateTime, delayTime, copywriting } =
     createMessageBodySchema.parse(request.body)
 
-  // if (getFiles.length === 1) {
-  //   console.log(getFiles[0].filename)
-  // } else {
-  //   console.log(
-  //     getFiles.map((file) => ({
-  //       name: file.filename,
-  //       path: file.filepath,
-  //     })),
-  //   )
-  // }
-  const messageIdGenerator = randomUUID()
-  const files = await request.saveRequestFiles()
-
-  const allFiles = await Promise.all(
-    files.map(async ({ filename, mimetype }) => {
-      const fileKey = `${randomUUID()}-${filename}`
-      const signedUrl = await getSignedUrl(
-        r2,
-        new PutObjectCommand({
-          Bucket: 'space-sync-dev',
-          Key: fileKey,
-          ContentType: mimetype,
-        }),
-        { expiresIn: 600 },
-      )
-
-      return { name: filename, key: fileKey, signedUrl, contentType: mimetype }
-    }),
-  )
-
-  const filesInMessage = allFiles.map(
-    async ({ name, key, contentType, signedUrl }) => {
-      await prisma.file.createMany({
-        data: [
-          {
-            name,
-            contentType,
-            key,
-            messageId: messageIdGenerator,
-          },
-        ],
-      })
-      return { signedUrl, key }
-    },
-  )
-
   const message = await prisma.message.create({
     data: {
-      id: messageIdGenerator,
       name,
       dateTime,
       delayTime,
@@ -80,36 +34,63 @@ app.post('/messages', async (request: FastifyRequest, reply: FastifyReply) => {
     },
   })
 
-  return reply.status(201).send({ message, filesInMessage })
+  // await
+
+  return reply.status(201).send(message.id)
 })
 
 app.post('/upload', async (request: FastifyRequest, reply: FastifyReply) => {
-  // const uploadBodySchema = z.object({
-  //   name: z.string().min(1),
-  //   contentType: z.string().regex(/\w+\/[-+.\w]+/g),
-  // })
-  // const { name, contentType } = uploadBodySchema.parse(request.body)
-  const files = await request.saveRequestFiles()
+  const filesData = await request.saveRequestFiles()
 
-  const allFiles = await Promise.all(
-    files.map(async ({ filename, mimetype }) => {
-      const fileKey = `${randomUUID()}-${filename}`
-      const signedUrl = await getSignedUrl(
-        r2,
-        new PutObjectCommand({
-          Bucket: 'space-sync-dev',
-          Key: fileKey,
-          ContentType: mimetype,
-        }),
-        { expiresIn: 600 },
-      )
+  // const allFiles = []
 
-      return { fileKey, signedUrl }
-    }),
-  )
+  // for (const file of files) {
+  //   const fileKey = `${randomUUID()}-${formatFileName(file.filename)}`
+  //   const uploadDestination = path.resolve(__dirname, '../tmp', fileKey)
+  //   const readStream = createReadStream(file.filepath)
+  //   await writeFile(uploadDestination, readStream)
 
-  return reply.status(201).send(allFiles)
+  //   const all = await prisma.file.create({
+  //     data: {
+  //       name: file.filename,
+  //       key: fileKey,
+  //       contentType: file.mimetype,
+  //     },
+  //   })
+  //   allFiles.push(all)
+  // }
+
+  const uploadPromises = filesData.map(async (file) => {
+    const fileKey = `${randomUUID()}-${formatFileName(file.filename)}`
+    const uploadDestination = path.resolve(__dirname, '../tmp', fileKey)
+    const readStream = createReadStream(file.filepath)
+    await writeFile(uploadDestination, readStream)
+
+    const singleFile = await prisma.file.create({
+      data: {
+        name: fileKey,
+        key: uploadDestination,
+        contentType: file.mimetype,
+      },
+    })
+
+    return { singleFile, fileKey }
+  })
+
+  const uploadedFiles = await Promise.all(uploadPromises)
+
+  return reply.status(201).send(uploadedFiles)
 })
+
+app.put(
+  '/message/:messageId/upload',
+  async (request: FastifyRequest, reply: FastifyReply) => {
+    const paramsSchema = z.object({
+      messageId: z.string().uuid(),
+    })
+    const { messageId } = paramsSchema.parse(request.params)
+  },
+)
 
 app.register(cors, {
   origin: true,
